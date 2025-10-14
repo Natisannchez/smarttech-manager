@@ -1,0 +1,263 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  color: #0078be;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.agregar-agente-bloque {
+  margin-bottom: 30px;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+button {
+  padding: 10px 15px;
+  background: #0078be;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  margin-bottom: 10px;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background: #005a8c;
+}
+
+.btn-baja {
+  background: #dc3545;
+}
+
+.btn-baja:hover {
+  background: #bd2130;
+}
+
+.btn-baja-equipo {
+  background: #a71f2c;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+}
+
+.btn-icono {
+  padding: 5px 8px;
+  min-width: auto;
+}
+
+.form-nuevo-agente {
+  margin-top: 15px;
+  padding: 15px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+.equipo-bloque {
+  margin-bottom: 20px;
+}
+
+.equipo-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 12px 15px;
+  background: #0078be;
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.equipo-cuadro {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  background: white;
+}
+
+.tabla-pagos {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.tabla-pagos th, .tabla-pagos td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+.tabla-pagos th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+
+.tabla-pagos tr:hover {
+  background-color: #f9f9f9;
+}
+
+.edit-form {
+  background: #f5f9ff;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.form-actions {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-cerrar {
+  background: #6c757d;
+  padding: 5px 10px;
+}
+
+.btn-guardar {
+  background: #28a745;
+}
+
+.btn-guardar:hover {
+  background: #218838;
+}
+
+.btn-cancelar {
+  background: #6c757d;
+}
+
+.btn-cancelar:hover {
+  background: #5a6268;
+}
+
+.calendario-container {
+  padding: 15px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.calendario-header {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.calendario-dias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.dia-calendario {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.dia-vacio {
+  border: none;
+}
+
+.dia-feriado {
+  background-color: #ffe6e6;
+}
+
+.dia-franco {
+  background-color: #f0f0f0;
+}
+
+.oculto {
+  display: none;
+}
+
+.visible {
+  display: block;
+}
+
+.flex {
+  display: flex;
+}
+
+.justify-end {
+  justify-content: flex-end;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.my-2 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.opacity-70 {
+  opacity: 0.7;
+}
+
+hr {
+  margin: 15px 0;
+  border: 0;
+  border-top: 1px solid #eee;
+}
+
+.form-reasignar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": false,
+    "jsx": "preserve",
+    "lib": ["esnext", "dom"],
+    "allowSyntheticDefaultImports": true
+  },
+  "vueCompilerOptions": {
+    "globalTypesPath": "./node_modules/vue/dist/vue.d.ts"
+  },
+  "include": [
+    "src/**/*",
+    "*.vue"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
