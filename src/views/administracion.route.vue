@@ -41,8 +41,8 @@
         <h3>Técnicos</h3>
         <p>Gestionar información de los técnicos</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Técnicos</button>
-          <button class="btn-secondary">Agregar Técnico</button>
+          <button class="btn-primary" @click="router.push('/tecnicos')">Ver Técnicos</button>
+          <button class="btn-secondary" @click="router.push('/tecnicos?nuevo=true')">Agregar Técnico</button>
         </div>
       </div>
 
@@ -91,6 +91,7 @@ const router = useRouter()
 const iraNuevaOrden = () => {
   router.push('/ordenes/nueva')
 }
+const router = useRouter()
 </script>
 
 <style scoped>

@@ -8,6 +8,7 @@ import AdministracionView from './views/administracion.route.vue'
 import Login from './views/login.vue'
 import OrdenesTrabajo from './views/OrdenesTrabajo.vue'
 import OrdersList from './views/OrdersList.vue'
+import TecnicosView from './views/tecnicos.route.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -47,6 +48,8 @@ const router = createRouter({
       path: '/ordenes/:id',
       name: 'orderDetail',
       component: OrdenesTrabajo,
+      path: '/tecnicos',
+      component: TecnicosView,
       meta: { requiresAuth: true }
     }
   ]

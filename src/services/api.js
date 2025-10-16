@@ -43,8 +43,8 @@ export const ordenesService = {
 export const tecnicosService = {
   getAll: () => api.get('/tecnicos'),
   create: (tecnico) => api.post('/tecnicos', tecnico),
-  update: (id, tecnico) => api.put(`/tecnicos/${id}`, tecnico),
-  delete: (id) => api.delete(`/tecnicos/${id}`)
+  update: (dni, tecnico) => api.put(`/tecnicos/${dni}`, tecnico),
+  toggleEstado: (dni) => api.patch(`/tecnicos/${dni}/toggle-estado`)
 };
 
 // Servicio de Dashboard

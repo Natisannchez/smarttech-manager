@@ -4,8 +4,9 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/app_pagos';
+const config = require('./config');
+const PORT = config.PORT;
+const MONGODB_URI = config.MONGODB_URI;
 
 // Middleware
 app.use(cors());
@@ -89,6 +90,11 @@ app.post('/api/clientes', async (req, res) => {
 
 // =================== RUTA DE SALUD ===================
 
+// =================== RUTAS DE TÉCNICOS ===================
+const tecnicosRoutes = require('./routes/tecnicos.routes');
+app.use('/api/tecnicos', tecnicosRoutes);
+
+// =================== RUTA DE SALUD ===================
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
