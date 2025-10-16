@@ -6,6 +6,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from './views/Home.route.vue'
 import AdministracionView from './views/administracion.route.vue'
 import Login from './views/login.vue'
+import TecnicosView from './views/tecnicos.route.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,6 +29,11 @@ const router = createRouter({
     {
       path: '/administracion',
       component: AdministracionView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/tecnicos',
+      component: TecnicosView,
       meta: { requiresAuth: true }
     }
   ]
