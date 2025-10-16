@@ -91,7 +91,6 @@ const router = useRouter()
 const iraNuevaOrden = () => {
   router.push('/ordenes/nueva')
 }
-const router = useRouter()
 </script>
 
 <style scoped>
