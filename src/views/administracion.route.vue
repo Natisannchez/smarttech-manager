@@ -21,8 +21,8 @@
         <h3>Órdenes de Trabajo</h3>
         <p>Crear y administrar órdenes de reparación</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Órdenes</button>
-          <button class="btn-secondary">Nueva Orden</button>
+          <button class="btn-primary" @click="router.push('/ordenes')">Ver Órdenes</button>
+          <button class="btn-secondary" @click="iraNuevaOrden">Nueva Orden</button>
         </div>
       </div>
 
@@ -84,7 +84,13 @@
 </template>
 
 <script setup>
-// No imports needed for now
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const iraNuevaOrden = () => {
+  router.push('/ordenes/nueva')
+}
 </script>
 
 <style scoped>
