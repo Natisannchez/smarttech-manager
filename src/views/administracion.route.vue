@@ -11,8 +11,8 @@
         <h3>Gestión de Clientes</h3>
         <p>Administrar clientes particulares e institucionales</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Clientes</button>
-          <button class="btn-secondary">Nuevo Cliente</button>
+          <button class="btn-primary" @click="router.push('/clientes')">Ver Clientes</button>
+          <button class="btn-secondary" @click="router.push('/clientes')">Nuevo Cliente</button>
         </div>
       </div>
 
