@@ -14,18 +14,34 @@ app.use(express.json());
 
 let db;
 
+// Función para iniciar el servidor
+const startServer = () => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`📍 API disponible en: http://localhost:${PORT}/api`);
+    console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+  });
+};
+
 // Conectar a MongoDB
 MongoClient.connect(MONGODB_URI, { useUnifiedTopology: true })
   .then(client => {
     console.log('🟢 Conectado a MongoDB - SmartTech Manager');
     
     // Seleccionar la base de datos
-    db = client.db('app_pagos');
+    db = client.db('smarttech');
     
     console.log(`📊 Base de datos: ${db.databaseName}`);
+    
+    // Configurar las rutas con la conexión a la base de datos
+    configureRoutes(db);
+    
+    // Iniciar el servidor una vez conectado a la base de datos
+    startServer();
   })
   .catch(err => {
     console.error('❌ Error conectando a MongoDB:', err);
+    console.error('Detalles del error:', err.stack);
     process.exit(1);
   });
 
@@ -58,41 +74,54 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// =================== RUTAS DE CLIENTES ===================
+// =================== RUTAS ===================
+const clientesRoutes = require('./routes/clientes.routes');
+app.use('/api/clientes', clientesRoutes);
 
-app.get('/api/clientes', async (req, res) => {
+// =================== RUTA DE SALUD ===================
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'El servidor está funcionando correctamente' });
+});
+
+// =================== RUTAS DE CLIENTES ===================
+app.get('/api/clientes/dni/:dni', async (req, res) => {
   try {
-    const clientes = await db.collection('clientes').find({}).toArray();
-    res.json(clientes);
+    const cliente = await db.collection('clientes').findOne({ dni: req.params.dni });
+    if (!cliente) {
+      return res.status(404).json({ message: 'Cliente no encontrado' });
+    }
+    res.json(cliente);
   } catch (error) {
-    console.error('Error obteniendo clientes:', error);
+    console.error('Error buscando cliente:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/clientes', async (req, res) => {
-  try {
-    const clienteData = {
-      ...req.body,
-      fechaRegistro: new Date(),
-      activo: true
-    };
-    
-    const result = await db.collection('clientes').insertOne(clienteData);
-    const nuevoCliente = { _id: result.insertedId, ...clienteData };
-    
-    res.status(201).json(nuevoCliente);
-  } catch (error) {
-    console.error('Error creando cliente:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// =================== RUTA DE SALUD ===================
-
 // =================== RUTAS DE TÉCNICOS ===================
 const tecnicosRoutes = require('./routes/tecnicos.routes');
 app.use('/api/tecnicos', tecnicosRoutes);
+
+// =================== CONFIGURACIÓN DE RUTAS ===================
+const configureRoutes = (database) => {
+  // Rutas de productos
+  const productosRoutes = require('./routes/productos.routes');
+  productosRoutes.initDB(database);
+  app.use('/api/productos', productosRoutes);
+
+  // Rutas de clientes
+  app.use('/api/clientes', clientesRoutes);
+
+  // Rutas de técnicos
+  app.use('/api/tecnicos', tecnicosRoutes);
+
+  // Rutas de órdenes
+  app.use('/api/ordenes', ordenesRoutes);
+};
+
+// =================== RUTAS DE ÓRDENES DE TRABAJO ===================
+const ordenesRoutes = require('./routes/ordenesTrabajo.routes');
+app.use('/api/ordenes', ordenesRoutes);
+
 
 // =================== RUTA DE SALUD ===================
 app.get('/api/health', (req, res) => {
@@ -104,9 +133,4 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📍 API disponible en: http://localhost:${PORT}/api`);
-  console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
-});
+// El servidor se inicia en la función startServer después de la conexión a MongoDB

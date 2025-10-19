@@ -247,13 +247,23 @@ const buscarCliente = async () => {
 
   try {
     const response = await clientesService.buscarPorDNI(formData.cliente.dni)
-    formData.cliente.nombreApellido = response.data.nombreApellido
+    
+    // Si encontramos el cliente, actualizamos todos los campos
+    if (response.data) {
+      formData.cliente.nombreApellido = response.data.nombre_apellido
+      formData.cliente.telefono = response.data.telefono || ''
+      formData.cliente.domicilio = response.data.domicilio || ''
+      formData.cliente.tipoCliente = response.data.tipo_cliente || 'particular'
+      if (response.data.tipo_cliente === 'empresa') {
+        formData.cliente.nombreEmpresa = response.data.nombre_empresa || ''
+      }
 
-    await Swal.fire({
-      icon: 'success',
-      title: 'Cliente encontrado',
-      text: 'Los datos del cliente han sido cargados',
-    })
+      await Swal.fire({
+        icon: 'success',
+        title: 'Cliente encontrado',
+        text: 'Los datos del cliente han sido cargados',
+      })
+    }
   } catch (error) {
     if (error.response && error.response.status === 404) {
       const result = await Swal.fire({
@@ -269,6 +279,7 @@ const buscarCliente = async () => {
         agregarCliente()
       }
     } else {
+      console.error('Error al buscar cliente:', error);
       await Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -315,54 +326,52 @@ const guardarOrden = async () => {
     // Validar el formulario
     validarFormulario()
 
-    // Preparar datos del producto
+    // Preparar y validar datos del producto
     const productoData = {
-      numero_serie: formData.equipo.numeroSerie,
-      tipo_producto: formData.equipo.tipo,
-      marca: formData.equipo.marca,
-      modelo: formData.equipo.modelo
+      numero_serie: String(formData.equipo.numeroSerie).trim(),
+      tipo_producto: String(formData.equipo.tipo).trim(),
+      marca: String(formData.equipo.marca || '').trim(),
+      modelo: String(formData.equipo.modelo || '').trim()
+    };
+
+    // Validar datos del producto
+    if (!productoData.numero_serie || !productoData.tipo_producto) {
+      throw new Error('El número de serie y tipo de producto son obligatorios');
     }
+
+    console.log('Datos del producto a crear:', productoData);
 
     // Preparar datos de la orden
     const ordenData = {
-      cliente_dni: formData.cliente.dni,
-      producto_numero_serie: formData.equipo.numeroSerie,
+      cliente_dni: String(formData.cliente.dni),
+      producto_numero_serie: productoData.numero_serie,
       fecha_ingreso: new Date().toISOString(),
-      descripcion_falla: formData.equipo.falla,
+      descripcion_falla: String(formData.equipo.falla || '').trim(),
       estado: 'Ingresado',
       codigo_orden_visible: formData.cliente.tipoCliente === 'empresa' 
-        ? formData.codigoOrdenVisible 
+        ? String(formData.codigoOrdenVisible).trim()
         : null // Para particulares se generará automáticamente en el backend
-    }
+    };
+
+    // Intentar crear el cliente (si ya existe, ignoramos el error 400)
+    const nuevoCliente = {
+      dni: formData.cliente.dni,
+      nombre_apellido: formData.cliente.nombreApellido,
+      telefono: formData.cliente.telefono || '',
+      domicilio: formData.cliente.domicilio || '',
+      tipo_cliente: formData.cliente.tipoCliente,
+      nombre_empresa: formData.cliente.tipoCliente === 'empresa' ? formData.cliente.nombreEmpresa : null
+    };
 
     try {
-      // Verificar si el cliente ya existe
-      const clienteExistente = await clientesService.buscarPorDNI(formData.cliente.dni)
-      if (!clienteExistente) {
-        // Crear el cliente si no existe
-        await clientesService.create({
-          dni: formData.cliente.dni,
-          nombre_apellido: formData.cliente.nombreApellido,
-          telefono: formData.cliente.telefono,
-          domicilio: formData.cliente.domicilio,
-          tipo_cliente: formData.cliente.tipoCliente,
-          nombre_empresa: formData.cliente.nombreEmpresa
-        })
-      }
+      await clientesService.create(nuevoCliente);
+      console.log('Cliente creado exitosamente');
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        // Crear el cliente si no existe
-        await clientesService.create({
-          dni: formData.cliente.dni,
-          nombre_apellido: formData.cliente.nombreApellido,
-          telefono: formData.cliente.telefono,
-          domicilio: formData.cliente.domicilio,
-          tipo_cliente: formData.cliente.tipoCliente,
-          nombre_empresa: formData.cliente.nombreEmpresa
-        })
-      } else {
-        throw error
+      // Si el error es 400, significa que el cliente ya existe, lo cual está bien
+      if (error.response && error.response.status !== 400) {
+        throw error;
       }
+      console.log('Cliente ya existe, continuando con la orden');
     }
 
     // Crear o actualizar el producto

@@ -69,6 +69,14 @@
                 Producto
                 <span class="sort-icon">{{ getSortIcon('producto') }}</span>
                 </th>
+                <th scope="col" @click="sort('estado')" class="sortable">
+                Estado
+                <span class="sort-icon">{{ getSortIcon('estado') }}</span>
+                </th>
+                <th scope="col" @click="sort('fecha_ingreso')" class="sortable">
+                Fecha
+                <span class="sort-icon">{{ getSortIcon('fecha_ingreso') }}</span>
+                </th>
                 <th scope="col">Acciones</th>
             </tr>
             </thead>
@@ -78,6 +86,8 @@
                 <td>{{ order.nombreApellido }}</td>
                 <td>{{ order.dni }}</td>
                 <td>{{ order.producto }}</td>
+                <td :class="'estado-' + order.estado.toLowerCase()">{{ order.estado }}</td>
+                <td>{{ order.fecha_ingreso }}</td>
                 <td>
                 <button 
                     @click.stop="goToOrderDetail(order.numeroOrden)"
@@ -118,6 +128,8 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue'
     import { useRouter } from 'vue-router'
+    import { ordenesService } from '@/services/api'
+    import Swal from 'sweetalert2'
 
     const router = useRouter()
 
@@ -131,34 +143,32 @@
     const sortColumn = ref('numeroOrden')
     const sortDirection = ref('asc')
 
-    // Datos mock
-    const mockOrders = [
-    { numeroOrden: '2025-001', nombreApellido: 'Juan Pérez', dni: '25456789', producto: 'Smart TV Samsung 55"' },
-    { numeroOrden: '2025-002', nombreApellido: 'María García', dni: '30987654', producto: 'Notebook Lenovo' },
-    { numeroOrden: '2025-003', nombreApellido: 'Carlos López', dni: '28123456', producto: 'iPhone 15' },
-    { numeroOrden: '2025-004', nombreApellido: 'Ana Martínez', dni: '33789012', producto: 'PC de Escritorio' },
-    { numeroOrden: '2025-005', nombreApellido: 'Roberto Silva', dni: '27345678', producto: 'iPad Pro' },
-    { numeroOrden: '2025-006', nombreApellido: 'Laura Torres', dni: '31234567', producto: 'Smart TV LG 65"' },
-    { numeroOrden: '2025-007', nombreApellido: 'Diego Ruiz', dni: '29876543', producto: 'MacBook Air' },
-    { numeroOrden: '2025-008', nombreApellido: 'Patricia Sánchez', dni: '32345678', producto: 'Monitor Samsung' },
-    { numeroOrden: '2025-009', nombreApellido: 'Miguel Rodríguez', dni: '26789012', producto: 'PlayStation 5' },
-    { numeroOrden: '2025-010', nombreApellido: 'Sofía Castro', dni: '34567890', producto: 'Impresora HP' }
-    ]
-
     // Métodos
     const fetchOrders = async () => {
-    loading.value = true
-    error.value = null
-    
-    try {
-        // Simular llamada al backend
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        orders.value = mockOrders
-    } catch (e) {
+      loading.value = true
+      error.value = null
+      
+      try {
+        const response = await ordenesService.getAll()
+        orders.value = response.data.data.map(order => ({
+          numeroOrden: order.codigo_orden_visible,
+          nombreApellido: order.cliente.nombre_apellido,
+          dni: order.cliente.dni,
+          producto: `${order.producto.tipo_producto} ${order.producto.marca} ${order.producto.modelo}`,
+          estado: order.estado,
+          fecha_ingreso: new Date(order.fecha_ingreso).toLocaleDateString()
+        }))
+      } catch (e) {
+        console.error('Error al cargar órdenes:', e)
         error.value = 'No se pudieron cargar las órdenes. Por favor, intente nuevamente.'
-    } finally {
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron cargar las órdenes. Por favor, intente nuevamente.',
+        })
+      } finally {
         loading.value = false
-    }
+      }
     }
 
     const goToOrderDetail = (orderId) => {
@@ -179,12 +189,16 @@
     return sortDirection.value === 'asc' ? '↑' : '↓'
     }
 
-    const handleSearch = () => {
+    const handleSearch = async () => {
       // Reiniciar a la primera página cuando se realiza una búsqueda
       currentPage.value = 1
-      // Aquí podríamos añadir lógica adicional cuando tengamos el backend
-      // Por ejemplo, hacer una llamada a la API con los parámetros de búsqueda
+      await fetchOrders() // Recargar las órdenes
     }
+
+    // Cargar datos cuando se monta el componente
+    onMounted(() => {
+      fetchOrders()
+    })
 
     // Computed properties
     const filteredOrders = computed(() => {
