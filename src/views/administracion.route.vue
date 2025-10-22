@@ -30,10 +30,11 @@
         <div class="section-icon">📅</div>
         <h3>Agenda</h3>
         <p>Programar y organizar el calendario de trabajo</p>
-        <div class="section-actions">
-          <button class="btn-primary">Ver Agenda</button>
-          <button class="btn-secondary">Programar</button>
-        </div>
+      <div class="section-actions">
+        <button class="btn-primary" @click="router.push('/agenda')">Ver Agenda</button>
+        <button class="btn-secondary" @click="router.push('/programar')">Programar</button>
+      </div>
+
       </div>
 
       <div class="section-card">

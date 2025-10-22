@@ -8,7 +8,10 @@ import AdministracionView from './views/administracion.route.vue'
 import Login from './views/login.vue'
 import OrdenesTrabajo from './views/OrdenesTrabajo.vue'
 import OrdersList from './views/OrdersList.vue'
-import TecnicosView from './views/tecnicos.route.vue'
+import TecnicosView from './views/tecnicos.route.vue' 
+import AgendaView from './views/AgendaView.vue'  
+import ProgramarView from './views/ProgramarView.vue'
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -44,12 +47,28 @@ const router = createRouter({
       component: OrdersList,
       meta: { requiresAuth: true }
     },
-    {
-      path: '/ordenes/:id',
+    {  
+      path: '/ordenes/:id',  
       name: 'orderDetail',
       component: OrdenesTrabajo,
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/tecnicos',
+      name: 'tecnicos',
       component: TecnicosView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/agenda',
+      name: 'agenda',
+      component: AgendaView,
+      meta: { requiresAuth: true } 
+    }, 
+    {
+      path: '/programar',
+      name: 'programar',
+      component: ProgramarView,
       meta: { requiresAuth: true }
     }
   ]
