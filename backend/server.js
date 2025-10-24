@@ -1,5 +1,5 @@
 const express = require('express');
-const { MongoClient, ObjectId } = require('mongodb');
+const { MongoClient } = require('mongodb');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -8,34 +8,53 @@ const config = require('./config');
 const PORT = config.PORT;
 const MONGODB_URI = config.MONGODB_URI;
 
-// Middleware
+// =================== MIDDLEWARE ===================
 app.use(cors());
 app.use(express.json());
 
 let db;
 
-// Conectar a MongoDB
+// =================== IMPORTAR RUTAS ===================
+const clientesRoutes       = require('./routes/clientes.routes');
+const tecnicosRoutes       = require('./routes/tecnicos.routes');
+const ordenesRoutes        = require('./routes/ordenesTrabajo.routes');
+const ordenesAgendaRoutes  = require('./routes/ordenesAgenda.routes'); // nuevo
+const agendaRoutes         = require('./routes/agenda.routes');        // nuevo
+
+// =================== FUNCIÓN PARA INICIAR SERVER ===================
+const startServer = () => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`📍 API disponible en: http://localhost:${PORT}/api`);
+    console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+  });
+};
+
+// =================== CONEXIÓN A MONGODB ===================
 MongoClient.connect(MONGODB_URI, { useUnifiedTopology: true })
   .then(client => {
     console.log('🟢 Conectado a MongoDB - SmartTech Manager');
-    
-    // Seleccionar la base de datos
-    db = client.db('app_pagos');
-    
+    db = client.db('smarttech');
     console.log(`📊 Base de datos: ${db.databaseName}`);
+
+    // Configurar rutas con conexión activa
+    configureRoutes(db);
+
+    // Iniciar servidor
+    startServer();
   })
   .catch(err => {
     console.error('❌ Error conectando a MongoDB:', err);
+    console.error('Detalles del error:', err.stack);
     process.exit(1);
   });
 
 // =================== RUTAS DE AUTENTICACIÓN ===================
-
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    
-    // Por ahora, login simple sin base de datos
+
+    // Login simple
     if (username === 'admin' && password === 'admin123') {
       res.json({
         success: true,
@@ -58,55 +77,37 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// =================== RUTAS DE CLIENTES ===================
+// =================== CONFIGURACIÓN DE RUTAS ===================
+const configureRoutes = (database) => {
+  // Productos (requiere initDB)
+  const productosRoutes = require('./routes/productos.routes');
+  productosRoutes.initDB(database);
+  app.use('/api/productos', productosRoutes);
 
-app.get('/api/clientes', async (req, res) => {
-  try {
-    const clientes = await db.collection('clientes').find({}).toArray();
-    res.json(clientes);
-  } catch (error) {
-    console.error('Error obteniendo clientes:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+  // Clientes
+  app.use('/api/clientes', clientesRoutes);
 
-app.post('/api/clientes', async (req, res) => {
-  try {
-    const clienteData = {
-      ...req.body,
-      fechaRegistro: new Date(),
-      activo: true
-    };
-    
-    const result = await db.collection('clientes').insertOne(clienteData);
-    const nuevoCliente = { _id: result.insertedId, ...clienteData };
-    
-    res.status(201).json(nuevoCliente);
-  } catch (error) {
-    console.error('Error creando cliente:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
+  // Técnicos
+  app.use('/api/tecnicos', tecnicosRoutes);
 
-// =================== RUTA DE SALUD ===================
+  // Órdenes de trabajo CRUD
+  app.use('/api/ordenes', ordenesRoutes);
 
-// =================== RUTAS DE TÉCNICOS ===================
-const tecnicosRoutes = require('./routes/tecnicos.routes');
-app.use('/api/tecnicos', tecnicosRoutes);
+  // Listados y filtros de agenda
+  app.use('/api/ordenes-agenda', ordenesAgendaRoutes);
+
+  // Programar y listar agenda
+  app.use('/api/agenda', agendaRoutes);
+};
 
 // =================== RUTA DE SALUD ===================
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     message: 'SmartTech Manager API funcionando',
     timestamp: new Date(),
     database: db ? 'Conectado' : 'Desconectado'
   });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-  console.log(`📍 API disponible en: http://localhost:${PORT}/api`);
-  console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
-});
+// El servidor se inicia en startServer() después de la conexión

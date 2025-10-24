@@ -99,6 +99,14 @@
 
           <div class="form-row">
             <div class="form-group">
+              <label>DNI/CUIT *</label>
+              <input 
+                v-model="formularioCliente.dni" 
+                required
+                :readonly="!!dniPreCargado"
+              />
+            </div>
+            <div class="form-group">
               <label>Teléfono</label>
               <input v-model="formularioCliente.telefono" type="tel" />
             </div>
@@ -134,12 +142,16 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Estados reactivos
 const mostrarFormulario = ref(false)
 const clienteEditando = ref(null)
 const filtroTexto = ref('')
 const filtroTipo = ref('')
+const dniPreCargado = ref('')
 
 // Lista de clientes (simulado)
 const clientes = ref([
@@ -240,20 +252,31 @@ function guardarCliente() {
 }
 
 function cerrarFormulario() {
-  mostrarFormulario.value = false
-  clienteEditando.value = null
-  formularioCliente.value = {
-    nombre: '',
-    tipo: 'particular',
-    telefono: '',
-    email: '',
-    direccion: '',
-    contacto: ''
-  }
-}
+  if (dniPreCargado.value) {
+    router.back() // Volver a la orden de trabajo
+  } else {
+    mostrarFormulario.value = false
+    clienteEditando.value = null
+    formularioCliente.value = {
+      nombre: '',
+      tipo: 'particular',
+      telefono: '',
+      email: '',
+      direccion: '',
+      contacto: '',
+      dni: ''
+    }
+}}
 
 onMounted(() => {
-  console.log('Vista de Clientes cargada')
+  const tempDni = localStorage.getItem('temp_dni')
+  if (tempDni) {
+    dniPreCargado.value = tempDni
+    formularioCliente.value.dni = tempDni
+    formularioCliente.value.tipo = 'particular'
+    mostrarFormulario.value = true
+    localStorage.removeItem('temp_dni')
+  }
 })
 </script>
 

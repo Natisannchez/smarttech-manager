@@ -28,7 +28,17 @@ export const clientesService = {
   getAll: () => api.get('/clientes'),
   create: (cliente) => api.post('/clientes', cliente),
   update: (id, cliente) => api.put(`/clientes/${id}`, cliente),
-  delete: (id) => api.delete(`/clientes/${id}`)
+  delete: (id) => api.delete(`/clientes/${id}`),
+  buscarPorDNI: (dni) => api.get(`/clientes/dni/${dni}`)
+};
+
+// Servicio de Productos
+export const productosService = {
+  getAll: () => api.get('/productos'),
+  create: (producto) => api.post('/productos', producto),
+  update: (numeroSerie, producto) => api.put(`/productos/${numeroSerie}`, producto),
+  delete: (numeroSerie) => api.delete(`/productos/${numeroSerie}`),
+  buscarPorNumeroSerie: (numeroSerie) => api.get(`/productos/serie/${numeroSerie}`)
 };
 
 // Servicio de Órdenes de Trabajo
@@ -55,6 +65,17 @@ export const dashboardService = {
 // Servicio de Health Check
 export const healthService = {
   check: () => api.get('/health')
+};
+
+// Servicio de Órdenes para Agenda (filtros)
+export const ordenesAgendaService = {
+  list: (params = {}) => api.get('/ordenes-agenda', { params }),
+};
+
+// Servicio de Agenda (listar y programar)
+export const agendaService = {
+  list: (params = {}) => api.get('/agenda', { params }),
+  create: (payload) => api.post('/agenda', payload),
 };
 
 export default api;

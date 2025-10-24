@@ -1,28 +1,11 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, onMounted, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
+import { ordenesAgendaService, tecnicosService, agendaService } from '@/services/api'
 
 const router = useRouter()
 
-/* ===========================
-   MOCKS (cambiá por API luego)
-   =========================== */
-const pendientes = ref([
-  { _id:'o4501', codigo:'4501', cliente:{ nombre:'Juan Pérez', tipo:'particular' }, fecha_ingreso:new Date().toISOString(), estado:'Ingresado' },
-  { _id:'o4502', codigo:'EXT-778', cliente:{ nombre:'Hospital Italiano', tipo:'empresa' }, fecha_ingreso:new Date().toISOString(), estado:'Ingresado' },
-  { _id:'o4503', codigo:'EXT-995', cliente:{ nombre:'Mercantil Andina', tipo:'empresa' }, fecha_ingreso:new Date().toISOString(), estado:'Ingresado' },
-  { _id:'o4504', codigo:'EXT-441', cliente:{ nombre:'Scrapfree', tipo:'empresa' }, fecha_ingreso:new Date().toISOString(), estado:'Ingresado' }
-])
-
-const tecnicos = ref([
-  { dni:'30111222', nombre:'Ezequiel Castro' },
-  { dni:'28444999', nombre:'Nicolás Cuadrado' },
-  { dni:'29222333', nombre:'Francisco Galera' }
-])
-
-/* ===========================
-   estado del formulario
-   =========================== */
+// estado del formulario
 const ordenId = ref('')
 const tecnicoDni = ref('')
 const fechaRevision = ref('')
@@ -30,25 +13,20 @@ const fechaLimite = ref('')
 const guardando = ref(false)
 const error = ref('')
 
-/* ===========================
-   1) DÍAS HÁBILES
-   =========================== */
-// feriados opcionales (YYYY-MM-DD)
-const FERIADOS = [
-  // '2025-12-25',
-  // '2026-01-01'
-]
+// datasets
+const pendientes = ref([])  // órdenes estado=Ingresado
+const tecnicos = ref([])
 
-// true si es sábado, domingo o feriado
-function esNoHabil(d) {
-  const day = d.getDay() // 0 domingo, 6 sábado
+// helpers de días hábiles
+const FERIADOS = [] // ['2025-12-25']
+
+function esNoHabil (d) {
+  const day = d.getDay()
   if (day === 0 || day === 6) return true
   const iso = d.toISOString().slice(0,10)
   return FERIADOS.includes(iso)
 }
-
-// suma N días hábiles a una fecha ISO y devuelve YYYY-MM-DD
-function sumarDiasHabiles(fechaISO, n) {
+function sumarDiasHabiles (fechaISO, n) {
   const d = new Date(fechaISO)
   let rest = n
   while (rest > 0) {
@@ -57,38 +35,72 @@ function sumarDiasHabiles(fechaISO, n) {
   }
   return d.toISOString().slice(0,10)
 }
-
-function diasPorCliente(o) {
+function diasPorCliente (o) {
   if (!o) return 7
-  const nombre = (o.cliente?.nombre || '').toLowerCase()
-  const tipo = (o.cliente?.tipo || '').toLowerCase()
+  const nombre = (o.cliente?.nombre_apellido || o.cliente?.nombre || '').toLowerCase()
+  const tipo   = (o.cliente?.tipo_cliente || o.cliente?.tipo || '').toLowerCase()
   if (tipo === 'particular') return 7
   if (nombre.includes('hospital italiano')) return 2
   if (nombre.includes('mercantil andina'))  return 3
   if (nombre.includes('scrapfree'))         return 5
   return 3
 }
-
-function calcularFechaLimite(o) {
-  if (!o?.fecha_ingreso) return ''
-  return sumarDiasHabiles(o.fecha_ingreso, diasPorCliente(o))
+function calcularFechaLimite (o) {
+  const fi = o?.fecha_ingreso || o?.orden?.fecha_ingreso
+  if (!fi) return ''
+  return sumarDiasHabiles(fi, diasPorCliente(o))
 }
 
-/* ===========================
-   derivados + efectos
-   =========================== */
-const orden = computed(() => pendientes.value.find(p => p._id === ordenId.value) || null)
-watch(orden, (o) => { fechaLimite.value = o ? calcularFechaLimite(o) : '' })
+const orden = computed(() => pendientes.value.find(p => (p._id === ordenId.value) || (String(p.id_orden) === String(ordenId.value))) || null)
 
-const ahoraLocalMin = computed(() => new Date().toISOString().slice(0,16)) // para min en datetime-local
+const ahoraLocalMin = computed(() => new Date().toISOString().slice(0,16))
 const puedeGuardar = computed(() =>
   !!ordenId.value && !!tecnicoDni.value && !!fechaRevision.value && !guardando.value
 )
 
-/* ===========================
-   acciones
-   =========================== */
-function limpiar() {
+// cargar datos reales
+async function cargarPendientes () {
+  // GET /api/ordenes-agenda?estado=Ingresado
+  const resp = await ordenesAgendaService.list({ estado: 'Ingresado' })
+  const raw = Array.isArray(resp.data) ? resp.data : (resp.data?.data || [])
+  // normalizar algunos campos para el select
+  pendientes.value = raw.map(o => ({
+    ...o,
+    _id: o._id ?? o.id_orden ?? o.codigo_orden_visible,
+    codigo: o.codigo_orden_visible ?? o.codigo ?? String(o.id_orden ?? '—'),
+    cliente: o.cliente || o.orden?.cliente || {},
+    fecha_ingreso: o.fecha_ingreso ?? o.orden?.fecha_ingreso
+  }))
+}
+
+async function cargarTecnicos () {
+  const resp = await tecnicosService.getAll()
+  const raw = Array.isArray(resp.data) ? resp.data : (resp.data?.data || [])
+  tecnicos.value = raw.map(t => ({
+    dni: t.dni,
+    nombre: t.nombre_apellido ?? t.nombre
+  }))
+}
+
+async function init () {
+  try {
+    error.value = ''
+    await Promise.all([cargarPendientes(), cargarTecnicos()])
+  } catch (e) {
+    console.error(e)
+    error.value = 'No se pudo cargar datos iniciales.'
+  }
+}
+
+onMounted(init)
+
+// re-calcular fecha límite al cambiar orden
+watchEffect(() => {
+  fechaLimite.value = orden.value ? calcularFechaLimite(orden.value) : ''
+})
+
+// acciones
+function limpiar () {
   ordenId.value = ''
   tecnicoDni.value = ''
   fechaRevision.value = ''
@@ -96,22 +108,21 @@ function limpiar() {
   error.value = ''
 }
 
-async function guardar() {
+async function guardar () {
   error.value = ''
   if (!puedeGuardar.value) {
     error.value = 'Completá la orden, el técnico y la fecha de revisión.'
     return
   }
-
-  // validación extra: fecha de revisión no puede ser pasada
   const tsRev = new Date(fechaRevision.value).getTime()
   if (isNaN(tsRev) || tsRev < Date.now()) {
     error.value = 'La fecha de revisión no puede ser en el pasado.'
     return
   }
 
+  const oSel = orden.value
   const payload = {
-    id_orden: ordenId.value,
+    id_orden: oSel?.id_orden ?? oSel?._id ?? oSel?.codigo, // el backend acepta cualquiera de estos según implementaron
     dni_tecnico: tecnicoDni.value,
     fecha_revision: fechaRevision.value,
     fecha_limite: fechaLimite.value
@@ -119,11 +130,8 @@ async function guardar() {
 
   try {
     guardando.value = true
-    // TODO: reemplazar por llamadas reales:
-    // await AgendaApi.crearAsignacion(payload)
-    // await AgendaApi.marcarOrdenAsignada(ordenId.value)
-    console.log('ASIGNACIÓN (mock):', payload)
-    alert('Asignación guardada (mock).')
+    await agendaService.create(payload) // POST /api/agenda
+    alert('Asignación guardada.')
     router.push('/agenda')
   } catch (e) {
     console.error(e)
@@ -145,11 +153,11 @@ async function guardar() {
         <select v-model="ordenId">
           <option disabled value="">Seleccionar…</option>
           <option v-for="o in pendientes" :key="o._id" :value="o._id">
-            {{ o.codigo }} — {{ o.cliente?.nombre || '—' }}
+            {{ o.codigo }} — {{ o.cliente?.nombre_apellido || o.cliente?.nombre || '—' }}
           </option>
         </select>
         <small v-if="orden">
-          Ingreso: {{ new Date(orden.fecha_ingreso).toLocaleString() }}
+          Ingreso: {{ orden.fecha_ingreso ? new Date(orden.fecha_ingreso).toLocaleString() : '—' }}
           · Límite sugerida: <b>{{ fechaLimite || '—' }}</b>
         </small>
       </div>
