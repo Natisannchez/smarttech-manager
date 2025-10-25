@@ -63,7 +63,7 @@
       <h2>Estadísticas Rápidas</h2>
       <div class="stats-grid">
         <div class="stat-item">
-          <span class="stat-number">25</span>
+          <span class="stat-number">27</span>
           <span class="stat-label">Clientes Particulares</span>
         </div>
         <div class="stat-item">
@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-// No imports needed for now
+// funcionalidad botones 
 </script>
 
 <style scoped>
