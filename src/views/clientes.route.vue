@@ -31,22 +31,22 @@
     <div class="clientes-grid">
       <div 
         v-for="cliente in clientesFiltrados" 
-        :key="cliente.id"
+        :key="cliente._id"
         class="cliente-card"
-        :class="{ 'institucional': cliente.tipo === 'institucional' }"
+        :class="{ 'institucional': cliente.tipo_cliente === 'institucional' }"
       >
         <div class="cliente-header">
           <div class="cliente-info">
-            <h3>{{ cliente.nombre }}</h3>
-            <span class="tipo-badge" :class="cliente.tipo">
-              {{ cliente.tipo === 'particular' ? '👤 Particular' : '🏢 Institucional' }}
+            <h3>{{ cliente.nombre_apellido }}</h3>
+            <span class="tipo-badge" :class="cliente.tipo_cliente">
+              {{ cliente.tipo_cliente === 'particular' ? '👤 Particular' : '🏢 Institucional' }}
             </span>
           </div>
           <div class="cliente-acciones">
             <button class="btn-icon" @click="editarCliente(cliente)">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="btn-icon danger" @click="eliminarCliente(cliente.id)">
+            <button class="btn-icon danger" @click="eliminarCliente(cliente._id)">
               <i class="fas fa-trash"></i>
             </button>
           </div>
@@ -55,16 +55,16 @@
         <div class="cliente-detalles">
           <p v-if="cliente.telefono"><i class="fas fa-phone"></i> {{ cliente.telefono }}</p>
           <p v-if="cliente.email"><i class="fas fa-envelope"></i> {{ cliente.email }}</p>
-          <p v-if="cliente.direccion"><i class="fas fa-map-marker-alt"></i> {{ cliente.direccion }}</p>
-          <p v-if="cliente.tipo === 'institucional' && cliente.contacto">
-            <i class="fas fa-user-tie"></i> Contacto: {{ cliente.contacto }}
+          <p v-if="cliente.domicilio"><i class="fas fa-map-marker-alt"></i> {{ cliente.domicilio }}</p>
+          <p v-if="cliente.tipo_cliente === 'institucional' && cliente.nombre_empresa">
+            <i class="fas fa-user-tie"></i> Empresa: {{ cliente.nombre_empresa }}
           </p>
         </div>
 
         <div class="cliente-stats">
           <span class="stat">
             <i class="fas fa-clipboard-list"></i>
-            {{ obtenerOrdenesCliente(cliente.id) }} órdenes
+            {{ obtenerOrdenesCliente(cliente._id) }} órdenes
           </span>
           <span class="stat">
             <i class="fas fa-clock"></i>
@@ -98,6 +98,14 @@
           </div>
 
           <div class="form-row">
+            <div class="form-group">
+              <label>DNI/CUIT *</label>
+              <input 
+                v-model="formularioCliente.dni" 
+                required
+                :readonly="!!dniPreCargado"
+              />
+            </div>
             <div class="form-group">
               <label>Teléfono</label>
               <input v-model="formularioCliente.telefono" type="tel" />
@@ -134,45 +142,20 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { clientesService } from '@/services/api'
+
+const router = useRouter()
 
 // Estados reactivos
 const mostrarFormulario = ref(false)
 const clienteEditando = ref(null)
 const filtroTexto = ref('')
 const filtroTipo = ref('')
+const dniPreCargado = ref('')
 
-// Lista de clientes (simulado)
-const clientes = ref([
-  {
-    id: 1,
-    nombre: 'Juan Pérez',
-    tipo: 'particular',
-    telefono: '+54 261 123-4567',
-    email: 'juan.perez@email.com',
-    direccion: 'Av. San Martín 1234, Guaymallén',
-    ultimaOrden: '10/10/2025'
-  },
-  {
-    id: 2,
-    nombre: 'Seguros Rivadavia',
-    tipo: 'institucional',
-    telefono: '+54 261 987-6543',
-    email: 'contacto@segurosrivadavia.com',
-    direccion: 'Av. España 567, Mendoza',
-    contacto: 'María González',
-    ultimaOrden: '12/10/2025'
-  },
-  {
-    id: 3,
-    nombre: 'Hospital Central',
-    tipo: 'institucional',
-    telefono: '+54 261 456-7890',
-    email: 'sistemas@hospitalcentral.gov.ar',
-    direccion: 'Av. Libertador 890, Mendoza',
-    contacto: 'Dr. Roberto Silva',
-    ultimaOrden: '11/10/2025'
-  }
-])
+// Lista de clientes desde la base de datos
+const clientes = ref([])
 
 // Formulario para nuevo/editar cliente
 const formularioCliente = ref({
@@ -181,14 +164,15 @@ const formularioCliente = ref({
   telefono: '',
   email: '',
   direccion: '',
-  contacto: ''
+  contacto: '',
+  dni: ''
 })
 
 // Computed
 const clientesFiltrados = computed(() => {
   return clientes.value.filter(cliente => {
     const coincideTexto = !filtroTexto.value || 
-      cliente.nombre.toLowerCase().includes(filtroTexto.value.toLowerCase()) ||
+      cliente.nombre?.toLowerCase().includes(filtroTexto.value.toLowerCase()) ||
       cliente.telefono?.includes(filtroTexto.value) ||
       cliente.email?.toLowerCase().includes(filtroTexto.value.toLowerCase())
     
@@ -199,61 +183,87 @@ const clientesFiltrados = computed(() => {
 })
 
 // Métodos
-function obtenerOrdenesCliente(clienteId) {
-  // En una implementación real, esto consultaría la base de datos
-  return Math.floor(Math.random() * 10) + 1
-}
-
 function editarCliente(cliente) {
   clienteEditando.value = cliente
   formularioCliente.value = { ...cliente }
   mostrarFormulario.value = true
 }
 
-function eliminarCliente(clienteId) {
+async function eliminarCliente(clienteId) {
   if (confirm('¿Está seguro de eliminar este cliente?')) {
-    const index = clientes.value.findIndex(c => c.id === clienteId)
-    if (index !== -1) {
-      clientes.value.splice(index, 1)
+    try {
+      await clientesService.delete(clienteId)
+      await cargarClientes()
+    } catch (e) {
+      alert('Error al eliminar el cliente')
     }
   }
 }
 
-function guardarCliente() {
-  if (clienteEditando.value) {
-    // Editar cliente existente
-    const index = clientes.value.findIndex(c => c.id === clienteEditando.value.id)
-    if (index !== -1) {
-      clientes.value[index] = { ...formularioCliente.value, id: clienteEditando.value.id }
+async function guardarCliente() {
+  try {
+    const payload = {
+      dni: formularioCliente.value.dni,
+      nombre_apellido: formularioCliente.value.nombre,
+      telefono: formularioCliente.value.telefono,
+      domicilio: formularioCliente.value.direccion,
+      tipo_cliente: formularioCliente.value.tipo,
+      nombre_empresa: formularioCliente.value.tipo === 'institucional' ? formularioCliente.value.contacto : undefined
     }
-  } else {
-    // Crear nuevo cliente
-    const nuevoCliente = {
-      ...formularioCliente.value,
-      id: Date.now(),
-      ultimaOrden: null
+    if (clienteEditando.value) {
+      await clientesService.update(clienteEditando.value._id, payload)
+    } else {
+      await clientesService.create(payload)
     }
-    clientes.value.push(nuevoCliente)
+    await cargarClientes()
+    cerrarFormulario()
+  } catch (e) {
+    alert('Error al guardar el cliente')
   }
-  
-  cerrarFormulario()
 }
 
 function cerrarFormulario() {
-  mostrarFormulario.value = false
-  clienteEditando.value = null
-  formularioCliente.value = {
-    nombre: '',
-    tipo: 'particular',
-    telefono: '',
-    email: '',
-    direccion: '',
-    contacto: ''
+  if (dniPreCargado.value) {
+    router.back() // Volver a la orden de trabajo
+  } else {
+    mostrarFormulario.value = false
+    clienteEditando.value = null
+    formularioCliente.value = {
+      nombre: '',
+      tipo: 'particular',
+      telefono: '',
+      email: '',
+      direccion: '',
+      contacto: '',
+      dni: ''
+    }
   }
 }
 
-onMounted(() => {
-  console.log('Vista de Clientes cargada')
+async function cargarClientes() {
+  try {
+    const resp = await clientesService.getAll()
+    clientes.value = resp.data.data
+  } catch (e) {
+    console.error('Error al cargar clientes', e)
+  }
+}
+
+// Si tienes endpoint para órdenes por cliente, reemplaza esta función por una llamada real
+function obtenerOrdenesCliente(clienteId) {
+  return 'N/A'
+}
+
+onMounted(async () => {
+  const tempDni = localStorage.getItem('temp_dni')
+  if (tempDni) {
+    dniPreCargado.value = tempDni
+    formularioCliente.value.dni = tempDni
+    formularioCliente.value.tipo = 'particular'
+    mostrarFormulario.value = true
+    localStorage.removeItem('temp_dni')
+  }
+  await cargarClientes()
 })
 </script>
 

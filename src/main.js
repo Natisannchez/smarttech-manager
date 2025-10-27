@@ -6,6 +6,12 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from './views/Home.route.vue'
 import AdministracionView from './views/administracion.route.vue'
 import Login from './views/login.vue'
+import OrdenesTrabajo from './views/OrdenesTrabajo.vue'
+import OrdersList from './views/OrdersList.vue'
+import TecnicosView from './views/tecnicos.route.vue'
+import AgendaView from './views/AgendaView.vue'
+import ProgramarView from './views/ProgramarView.vue'
+import BusquedaView from './views/BusquedaView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -28,6 +34,52 @@ const router = createRouter({
     {
       path: '/administracion',
       component: AdministracionView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/ordenes/nueva',
+      component: OrdenesTrabajo,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/clientes',
+      component: () => import('./views/clientes.route.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/ordenes',
+      name: 'orders',
+      component: OrdersList,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/ordenes/:id',
+      name: 'orderDetail',
+      component: OrdenesTrabajo,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/tecnicos',
+      name: 'tecnicos',
+      component: TecnicosView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/agenda',
+      name: 'agenda',
+      component: AgendaView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/programar',
+      name: 'programar',
+      component: ProgramarView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/busqueda',
+      name: 'busqueda',
+      component: BusquedaView,
       meta: { requiresAuth: true }
     }
   ]

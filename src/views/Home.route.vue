@@ -2,14 +2,47 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Swal from 'sweetalert2'
+import { ordenesService, clientesService, dashboardService } from '@/services/api'
 
 const router = useRouter()
 const username = ref('')
 
-onMounted(() => {
+const ordenesPendientes = ref(0)
+const clientesActivos = ref(0)
+const entregasHoy = ref(0)
+const clientesInstitucionales = ref(0)
+const actividadReciente = ref([])
+
+onMounted(async () => {
   const user = localStorage.getItem('user')
-  if (user) {
-    username.value = user
+  if (user) username.value = user
+
+  // Dashboard stats desde backend (si existe endpoint)
+  try {
+    const dashboardResp = await dashboardService.getStats()
+    const stats = dashboardResp.data.data
+    ordenesPendientes.value = stats.ordenesPendientes ?? 0
+    clientesActivos.value = stats.clientesActivos ?? 0
+    entregasHoy.value = stats.entregasHoy ?? 0
+    clientesInstitucionales.value = stats.clientesInstitucionales ?? 0
+    actividadReciente.value = stats.actividadReciente ?? []
+  } catch (e) {
+    // Fallback si el endpoint no existe
+    const ordenesResp = await ordenesService.getAll()
+    ordenesPendientes.value = ordenesResp.data.data.filter(o => o.estado === 'Ingresado').length
+    const clientesResp = await clientesService.getAll()
+    clientesActivos.value = clientesResp.data.data.length
+    clientesInstitucionales.value = clientesResp.data.data.filter(c => c.tipo_cliente === 'institucional').length
+    const hoy = new Date().toISOString().slice(0,10)
+    entregasHoy.value = ordenesResp.data.data.filter(o => o.estado === 'Cerrada' && o.fecha_cierre?.startsWith(hoy)).length
+    actividadReciente.value = ordenesResp.data.data.slice(-3).map(o => ({
+      icon: o.estado === 'Cerrada' ? '✅' : '📝',
+      titulo: o.estado === 'Cerrada'
+        ? `Reparación completada para ${o.cliente?.nombre_apellido || o.cliente?.nombre}`
+        : `Nueva orden creada para ${o.cliente?.nombre_apellido || o.cliente?.nombre}`,
+      descripcion: o.producto ? `Producto: ${o.producto}` : '',
+      hora: o.fecha_cierre || o.fecha_ingreso || 'Reciente'
+    }))
   }
 })
 
@@ -64,7 +97,7 @@ const handleLogout = async () => {
         <div class="stat-card">
           <div class="stat-icon">🔧</div>
           <div class="stat-info">
-            <h3>12</h3>
+            <h3>{{ ordenesPendientes }}</h3>
             <p>Órdenes Pendientes</p>
           </div>
         </div>
@@ -72,7 +105,7 @@ const handleLogout = async () => {
         <div class="stat-card">
           <div class="stat-icon">👥</div>
           <div class="stat-info">
-            <h3>45</h3>
+            <h3>{{ clientesActivos }}</h3>
             <p>Clientes Activos</p>
           </div>
         </div>
@@ -80,7 +113,7 @@ const handleLogout = async () => {
         <div class="stat-card">
           <div class="stat-icon">⏰</div>
           <div class="stat-info">
-            <h3>3</h3>
+            <h3>{{ entregasHoy }}</h3>
             <p>Entregas Hoy</p>
           </div>
         </div>
@@ -88,7 +121,7 @@ const handleLogout = async () => {
         <div class="stat-card">
           <div class="stat-icon">🏢</div>
           <div class="stat-info">
-            <h3>8</h3>
+            <h3>{{ clientesInstitucionales }}</h3>
             <p>Clientes Institucionales</p>
           </div>
         </div>
@@ -122,27 +155,17 @@ const handleLogout = async () => {
       <div class="recent-activity">
         <h2>Actividad Reciente</h2>
         <div class="activity-list">
-          <div class="activity-item">
-            <div class="activity-icon">📝</div>
+          <div class="activity-item" v-for="(actividad, index) in actividadReciente" :key="index">
+            <div class="activity-icon">{{ actividad.icon }}</div>
             <div class="activity-content">
-              <p><strong>Nueva orden</strong> creada para Hospital Central</p>
-              <span class="activity-time">Hace 2 horas</span>
+              <p><strong>{{ actividad.titulo }}</strong> {{ actividad.descripcion }}</p>
+              <span class="activity-time">{{ actividad.hora }}</span>
             </div>
           </div>
-          
-          <div class="activity-item">
-            <div class="activity-icon">✅</div>
+          <div v-if="!actividadReciente.length" class="activity-item">
+            <div class="activity-icon">ℹ️</div>
             <div class="activity-content">
-              <p><strong>Reparación completada</strong> para Juan Pérez</p>
-              <span class="activity-time">Hace 4 horas</span>
-            </div>
-          </div>
-          
-          <div class="activity-item">
-            <div class="activity-icon">👤</div>
-            <div class="activity-content">
-              <p><strong>Nuevo cliente</strong> registrado: Seguros Rivadavia</p>
-              <span class="activity-time">Ayer</span>
+              <p>No hay actividad reciente.</p>
             </div>
           </div>
         </div>

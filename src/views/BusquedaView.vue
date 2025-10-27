@@ -31,7 +31,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { equiposService, agentesService } from '../services/api'
+import { equiposService, agentesService } from '@/services/api'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -84,11 +84,21 @@ async function buscar(q) {
     equiposService.getAll(),
     agentesService.getAll()
   ])
-  // Guardar todos los equipos en window para acceso global rápido
   window.__ALL_EQUIPOS__ = equiposRes.data || []
   const qNorm = normalizar(q)
-  resultados.value.equipos = (equiposRes.data || []).filter(e => normalizar(e.nombre).includes(qNorm))
-  resultados.value.personas = (agentesRes.data || []).filter(a => normalizar(a.nombre).includes(qNorm))
+  // Buscar en equipos por nombre, producto, marca, modelo, número de serie
+  resultados.value.equipos = (equiposRes.data || []).filter(e => {
+    return [e.nombre, e.producto, e.marca, e.modelo, e.numero_serie]
+      .map(normalizar)
+      .some(val => val.includes(qNorm))
+  })
+  // Buscar en personas/técnicos por nombre, producto, DNI, estado, especialidad, equipo vinculado
+  resultados.value.personas = (agentesRes.data || []).filter(a => {
+    return [a.nombre, a.producto, a.dni, a.estado, a.especialidad]
+      .map(normalizar)
+      .some(val => val.includes(qNorm)) ||
+      (a.equipo_id && window.__ALL_EQUIPOS__ && window.__ALL_EQUIPOS__.some(e => e._id === a.equipo_id && normalizar(e.nombre).includes(qNorm)))
+  })
   loading.value = false
 }
 

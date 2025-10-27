@@ -87,7 +87,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authService } from '../services/api.js'
+import { authService } from '@/services/api.js'
 
 const router = useRouter()
 const username = ref('')

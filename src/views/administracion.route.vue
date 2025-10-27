@@ -11,8 +11,8 @@
         <h3>Gestión de Clientes</h3>
         <p>Administrar clientes particulares e institucionales</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Clientes</button>
-          <button class="btn-secondary">Nuevo Cliente</button>
+          <button class="btn-primary" @click="router.push('/clientes')">Ver Clientes</button>
+          <button class="btn-secondary" @click="router.push('/clientes')">Nuevo Cliente</button>
         </div>
       </div>
 
@@ -21,8 +21,8 @@
         <h3>Órdenes de Trabajo</h3>
         <p>Crear y administrar órdenes de reparación</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Órdenes</button>
-          <button class="btn-secondary">Nueva Orden</button>
+          <button class="btn-primary" @click="router.push('/ordenes')">Ver Órdenes</button>
+          <button class="btn-secondary" @click="iraNuevaOrden">Nueva Orden</button>
         </div>
       </div>
 
@@ -31,8 +31,8 @@
         <h3>Agenda</h3>
         <p>Programar y organizar el calendario de trabajo</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Agenda</button>
-          <button class="btn-secondary">Programar</button>
+          <button class="btn-primary" @click="router.push('/agenda')">Ver Agenda</button>
+          <button class="btn-secondary" @click="router.push('/programar')">Programar</button>
         </div>
       </div>
 
@@ -41,12 +41,10 @@
         <h3>Técnicos</h3>
         <p>Gestionar información de los técnicos</p>
         <div class="section-actions">
-          <button class="btn-primary">Ver Técnicos</button>
-          <button class="btn-secondary">Agregar Técnico</button>
+          <button class="btn-primary" @click="router.push('/tecnicos')">Ver Técnicos</button>
+          <button class="btn-secondary" @click="router.push('/tecnicos?nuevo=true')">Agregar Técnico</button>
         </div>
       </div>
-
-      
 
       <div class="section-card">
         <div class="section-icon">⚙️</div>
@@ -63,20 +61,24 @@
       <h2>Estadísticas Rápidas</h2>
       <div class="stats-grid">
         <div class="stat-item">
-          <span class="stat-number">27</span>
+          <span class="stat-number">{{ stats.particulares }}</span>
           <span class="stat-label">Clientes Particulares</span>
         </div>
         <div class="stat-item">
-          <span class="stat-number">8</span>
+          <span class="stat-number">{{ stats.institucionales }}</span>
           <span class="stat-label">Clientes Institucionales</span>
         </div>
         <div class="stat-item">
-          <span class="stat-number">12</span>
+          <span class="stat-number">{{ stats.ordenesActivas }}</span>
           <span class="stat-label">Órdenes Activas</span>
         </div>
         <div class="stat-item">
-          <span class="stat-number">3</span>
+          <span class="stat-number">{{ stats.tecnicosDisponibles }}</span>
           <span class="stat-label">Técnicos Disponibles</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">{{ stats.totalTecnicos }}</span>
+          <span class="stat-label">Total Técnicos</span>
         </div>
       </div>
     </div>
@@ -84,7 +86,40 @@
 </template>
 
 <script setup>
-// funcionalidad botones 
+import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { clientesService, ordenesService, tecnicosService } from '@/services/api'
+
+const router = useRouter()
+
+const iraNuevaOrden = () => {
+  router.push('/ordenes/nueva')
+}
+
+const stats = ref({
+  particulares: 0,
+  institucionales: 0,
+  ordenesActivas: 0,
+  tecnicosDisponibles: 0,
+  totalTecnicos: 0
+})
+
+onMounted(async () => {
+  // Clientes
+  const clientesResp = await clientesService.getAll()
+  const clientes = clientesResp.data.data || []
+  stats.value.particulares = clientes.filter(c => c.tipo_cliente === 'particular').length
+  stats.value.institucionales = clientes.filter(c => c.tipo_cliente === 'institucional').length
+  // Órdenes
+  const ordenesResp = await ordenesService.getAll()
+  const ordenes = ordenesResp.data.data || []
+  stats.value.ordenesActivas = ordenes.filter(o => o.estado !== 'Cerrada').length
+  // Técnicos
+  const tecnicosResp = await tecnicosService.getAll()
+  const tecnicos = tecnicosResp.data.data || []
+  stats.value.tecnicosDisponibles = tecnicos.filter(t => t.estado === 'activo' || t.estado === 'disponible').length
+  stats.value.totalTecnicos = tecnicos.length
+})
 </script>
 
 <style scoped>

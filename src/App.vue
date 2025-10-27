@@ -28,6 +28,8 @@ function toggleMenu() {
       <div class="menu-items" :class="{ active: menuOpen }">
         <router-link to="/home" @click="menuOpen = false">🏠 Dashboard</router-link>
         <router-link to="/administracion" @click="menuOpen = false">⚙️ Administración</router-link>
+        <router-link to="/agenda" @click="menuOpen = false">📅 Agenda</router-link>
+        <router-link to="/programar" @click="menuOpen = false">🗓️ Programar</router-link>
       </div>
     </div>
 
@@ -47,8 +49,6 @@ function toggleMenu() {
     </div>
 
     <div id="resultadosBuscador"></div>
-    
-
   </aside>
 
   <main class="page">
