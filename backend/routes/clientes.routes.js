@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const config = require('../config');
 
 // Middleware de conexión
@@ -99,6 +99,23 @@ router.post('/', connectDB, async (req, res) => {
   } catch (error) {
     console.error('Error creando cliente:', error);
     res.status(500).json({ success: false, message: 'Error al crear el cliente' });
+  } finally {
+    if (req.dbClient) req.dbClient.close();
+  }
+});
+
+// DELETE - Eliminar cliente por ID
+router.delete('/:id', connectDB, async (req, res) => {
+  try {
+    const { id } = req.params;
+  const result = await req.db.collection('clientes').deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Cliente no encontrado' });
+    }
+    res.json({ success: true, message: 'Cliente eliminado exitosamente' });
+  } catch (error) {
+    console.error('Error eliminando cliente:', error);
+    res.status(500).json({ success: false, message: 'Error al eliminar el cliente' });
   } finally {
     if (req.dbClient) req.dbClient.close();
   }

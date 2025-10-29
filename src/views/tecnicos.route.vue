@@ -86,13 +86,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router' 
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { tecnicosService } from '@/services/api'
 import ModalFormTecnico from '@/components/tecnicos/ModalFormTecnico.vue'
 import ModalConfirmacion from '@/components/shared/ModalConfirmacion.vue'
 
-const route = useRoute() 
+const route = useRoute()
 
 // Estado
 const tecnicos = ref([])
@@ -185,7 +185,7 @@ const mostrarMensaje = (texto, tipo = 'success') => {
   mensaje.value = { texto, tipo }
   setTimeout(() => {
     mensaje.value = null
-  }, 3000)
+	}, 3000)
 }
 </script>
 

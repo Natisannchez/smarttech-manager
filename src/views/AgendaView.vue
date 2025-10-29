@@ -33,6 +33,11 @@ function confirmarAsignarEstado(item) {
 }
 import { ref, onMounted } from 'vue'
 import { agendaService } from '@/services/api'
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const goToProgramar = () => {
+  router.push('/programar')
+}
 
 // Estado UI
 const loading = ref(true)
@@ -128,8 +133,10 @@ watch([q, estado, desde, hasta, items], filtrar)
 
 <template>
   <div class="page">
-    <h2>Agenda de órdenes</h2>
-
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+      <h2>Agenda de órdenes</h2>
+      <button @click="goToProgramar" class="btn-primary btn-programar">+ Programar</button>
+    </div>
     <!-- Filtros -->
     <div class="filters">
       <div class="field">
@@ -222,6 +229,20 @@ watch([q, estado, desde, hasta, items], filtrar)
 </template>
 
 <style scoped>
+  .btn-programar {
+    font-size: 1em;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 500;
+    background: #27ae60;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .btn-programar:hover {
+    background: #219150;
+  }
 .page { max-width: 1100px; margin: 0 auto; padding: 24px; }
 h2 { font-size: 1.6rem; margin-bottom: 12px; }
 

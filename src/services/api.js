@@ -57,7 +57,6 @@ export const tecnicosService = {
   delete: (id) => api.delete(`/tecnicos/${id}`),
   toggleEstado: (dni) => api.patch(`/tecnicos/${dni}/toggle-estado`)
 };
-
 // Servicio de Equipos (para BusquedaView)
 export const equiposService = {
   getAll: () => api.get('/productos'), // Reutilizando productos como equipos

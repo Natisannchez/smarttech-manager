@@ -171,16 +171,17 @@ const formularioCliente = ref({
 // Computed
 const clientesFiltrados = computed(() => {
   return clientes.value.filter(cliente => {
-    const coincideTexto = !filtroTexto.value || 
-      cliente.nombre?.toLowerCase().includes(filtroTexto.value.toLowerCase()) ||
-      cliente.telefono?.includes(filtroTexto.value) ||
-      cliente.email?.toLowerCase().includes(filtroTexto.value.toLowerCase())
-    
-    const coincideTipo = !filtroTipo.value || cliente.tipo === filtroTipo.value
-    
-    return coincideTexto && coincideTipo
-  })
-})
+    const texto = filtroTexto.value.toLowerCase();
+    const coincideTexto = !filtroTexto.value ||
+      (cliente.nombre_apellido && cliente.nombre_apellido.toLowerCase().includes(texto)) ||
+      (cliente.telefono && cliente.telefono.includes(filtroTexto.value)) ||
+      (cliente.email && cliente.email.toLowerCase().includes(texto));
+
+    const coincideTipo = !filtroTipo.value || cliente.tipo_cliente === filtroTipo.value;
+
+    return coincideTexto && coincideTipo;
+  });
+});
 
 // Métodos
 function editarCliente(cliente) {

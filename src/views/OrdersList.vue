@@ -1,11 +1,13 @@
 <template>
   <div class="orders-list-container">
+    <!-- ...existing code... -->
+  </div>
     <div class="header">
       <h1>📋 Órdenes de Trabajo</h1>
       <p>Gestión y seguimiento de órdenes</p>
     </div>
 
-    <!-- Barra de búsqueda -->
+    <!-- Barra de búsqueda y botón nueva orden -->
     <div class="search-bar">
       <div class="search-input-group">
         <input
@@ -24,6 +26,9 @@
           🔍 Buscar
         </button>
       </div>
+      <button @click="goToNuevaOrden" class="btn-primary btn-nueva-orden" style="margin-top:10px;">
+        + Nueva Orden de Trabajo
+      </button>
     </div>
 
     <!-- Estados de carga y error -->
@@ -80,24 +85,61 @@
               <span class="sort-icon">{{ getSortIcon('fecha_ingreso') }}</span>
             </th>
             <th scope="col">Acciones</th>
-          </tr>
+    <th scope="col">Editar Estado</th>
+    </tr>
         </thead>
         <tbody>
           <tr v-for="order in paginatedOrders" :key="order.numeroOrden" class="order-row">
-            <td>{{ order.numeroOrden }}</td>
-            <td>{{ order.nombreApellido }}</td>
-            <td>{{ order.dni }}</td>
-            <td>{{ order.producto }}</td>
-            <td :class="'estado-' + order.estado.toLowerCase()">{{ order.estado }}</td>
-            <td>{{ order.fecha_ingreso }}</td>
             <td>
-              <button 
-                @click.stop="showOrderDetail(order)"
-                class="btn-secondary btn-sm"
-                aria-label="Ver detalles de la orden"
-              >
-                Ver detalles
-              </button>
+              {{
+                order.codigo_orden_visible
+                  || order.numeroOrden
+                  || (order._id ? 'ORD-' + order._id.slice(-4).toUpperCase() : '—')
+              }}
+            </td>
+              <td>{{ order.codigo_orden_visible || order.numeroOrden || (order._id ? 'ORD-' + order._id.slice(-4).toUpperCase() : '—') }}</td>
+              <td>{{ order.cliente?.nombre_apellido || order.cliente?.nombre || order.cliente || '—' }}</td>
+              <td>{{ order.cliente?.dni || order.dni || '—' }}</td>
+              <td>{{ order.producto?.tipo_producto || order.producto?.marca || order.producto?.modelo || order.producto || '—' }}</td>
+              <td :class="'estado-' + (order.estado ? order.estado.toLowerCase() : '')">{{ order.estado || '—' }}</td>
+              <td>{{ order.fecha_ingreso ? new Date(order.fecha_ingreso).toLocaleDateString() + ' ' + new Date(order.fecha_ingreso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (order.fecha_creacion ? new Date(order.fecha_creacion).toLocaleDateString() + ' ' + new Date(order.fecha_creacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—') }}</td>
+              <td>
+                <button 
+                  @click.stop="order.showDetail = !order.showDetail"
+                  class="btn-secondary btn-sm"
+                  aria-label="Ver detalles de la orden"
+                >
+                  {{ order.showDetail ? 'Ocultar' : 'Ver detalles' }}
+                </button>
+              </td>
+          <div v-if="order.showDetail" class="order-detail-panel">
+            <div class="order-detail-panel-content">
+              <h3>Detalle de Orden № {{ order.codigo_orden_visible || order.numeroOrden || (order._id ? 'ORD-' + order._id.slice(-4).toUpperCase() : '—') }}</h3>
+              <ul class="order-detail-list">
+                <li><strong>Cliente:</strong> {{ order.cliente?.nombre_apellido || order.cliente?.nombre || order.cliente || '—' }}</li>
+                <li><strong>DNI:</strong> {{ order.cliente?.dni || order.dni || '—' }}</li>
+                <li><strong>Producto:</strong>
+                  <ul>
+                    <li><strong>Tipo:</strong> {{ order.producto?.tipo_producto || '—' }}</li>
+                    <li><strong>Marca:</strong> {{ order.producto?.marca || '—' }}</li>
+                    <li><strong>Modelo:</strong> {{ order.producto?.modelo || '—' }}</li>
+                    <li><strong>N° Serie:</strong> {{ order.producto?.numero_serie || '—' }}</li>
+                  </ul>
+                </li>
+                <li><strong>Estado:</strong> {{ order.estado || '—' }}</li>
+                <li><strong>Fecha de ingreso:</strong> {{ order.fecha_ingreso ? new Date(order.fecha_ingreso).toLocaleDateString() + ' ' + new Date(order.fecha_ingreso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (order.fecha_creacion ? new Date(order.fecha_creacion).toLocaleDateString() + ' ' + new Date(order.fecha_creacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—') }}</li>
+              </ul>
+              <button class="btn-primary" @click="order.showDetail = false">Cerrar</button>
+            </div>
+          </div>
+            <td>
+              <input
+                type="text"
+                v-model="order.estado"
+                @change="handleEstadoChange(order)"
+                class="form-control"
+                placeholder="Escribe estado o comentario..."
+              />
             </td>
           </tr>
         </tbody>
@@ -107,13 +149,20 @@
     <!-- Modal de detalle de orden -->
     <div v-if="modalVisible" class="modal-overlay">
       <div class="modal-content">
-        <h2>Detalle de Orden № {{ selectedOrder.numeroOrden }}</h2>
+        <h2>Detalle de Orden № {{ selectedOrder.codigo_orden_visible || selectedOrder.numeroOrden || (selectedOrder._id ? 'ORD-' + selectedOrder._id.slice(-4).toUpperCase() : '—') }}</h2>
         <ul class="order-detail-list">
-          <li><strong>Cliente:</strong> {{ selectedOrder.nombreApellido }}</li>
-          <li><strong>DNI:</strong> {{ selectedOrder.dni }}</li>
-          <li><strong>Producto:</strong> {{ selectedOrder.producto }}</li>
-          <li><strong>Estado:</strong> {{ selectedOrder.estado }}</li>
-          <li><strong>Fecha de ingreso:</strong> {{ selectedOrder.fecha_ingreso }}</li>
+          <li><strong>Cliente:</strong> {{ selectedOrder.cliente?.nombre_apellido || selectedOrder.cliente?.nombre || selectedOrder.cliente || '—' }}</li>
+          <li><strong>DNI:</strong> {{ selectedOrder.cliente?.dni || selectedOrder.dni || '—' }}</li>
+          <li><strong>Producto:</strong>
+            <ul>
+              <li><strong>Tipo:</strong> {{ selectedOrder.producto?.tipo_producto || '—' }}</li>
+              <li><strong>Marca:</strong> {{ selectedOrder.producto?.marca || '—' }}</li>
+              <li><strong>Modelo:</strong> {{ selectedOrder.producto?.modelo || '—' }}</li>
+              <li><strong>N° Serie:</strong> {{ selectedOrder.producto?.numero_serie || '—' }}</li>
+            </ul>
+          </li>
+          <li><strong>Estado:</strong> {{ selectedOrder.estado || '—' }}</li>
+          <li><strong>Fecha de ingreso:</strong> {{ selectedOrder.fecha_ingreso ? new Date(selectedOrder.fecha_ingreso).toLocaleString() : (selectedOrder.fecha_creacion ? new Date(selectedOrder.fecha_creacion).toLocaleString() : '—') }}</li>
         </ul>
         <button class="btn-primary" @click="modalVisible = false">Cerrar</button>
       </div>
@@ -139,126 +188,313 @@
         →
       </button>
     </div>
-  </div>
 </template>
 
 <script setup>
-// Modal de detalle
-import { reactive } from 'vue'
-const modalVisible = ref(false)
-const selectedOrder = reactive({})
-
-const showOrderDetail = (order) => {
-  Object.assign(selectedOrder, order)
-  modalVisible.value = true
-}
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ordenesService } from '@/services/api'
-import Swal from 'sweetalert2'
-
-const router = useRouter()
-
-// Estado
-const orders = ref([])
-const loading = ref(true)
-const error = ref(null)
-const searchQuery = ref('')
-const currentPage = ref(1)
-const itemsPerPage = 10
-const sortColumn = ref('numeroOrden')
-const sortDirection = ref('asc')
-
-// Métodos
-const fetchOrders = async () => {
-  loading.value = true
-  error.value = null
-  try {
-    const response = await ordenesService.getAll()
-    orders.value = response.data.data.map(order => ({
-      numeroOrden: order.codigo_orden_visible,
-      nombreApellido: order.cliente?.nombre_apellido || '',
-      dni: order.cliente?.dni || '',
-      producto: order.producto ? `${order.producto.tipo_producto || ''} ${order.producto.marca || ''} ${order.producto.modelo || ''}`.trim() : '',
-      estado: order.estado,
-      fecha_ingreso: new Date(order.fecha_ingreso).toLocaleDateString(),
-      id: order._id // para navegación
-    }))
-  } catch (e) {
-    console.error('Error al cargar órdenes:', e)
-    error.value = 'No se pudieron cargar las órdenes. Por favor, intente nuevamente.'
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudieron cargar las órdenes. Por favor, intente nuevamente.',
-    })
-  } finally {
-    loading.value = false
-  }
-}
-
-const goToOrderDetail = (orderId) => {
-  router.push(`/ordenes/${orderId}`)
-}
-
-const sort = (column) => {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortColumn.value = column
-    sortDirection.value = 'asc'
-  }
-}
-
-const getSortIcon = (column) => {
-  if (sortColumn.value !== column) return '↕️'
-  return sortDirection.value === 'asc' ? '↑' : '↓'
-}
-
-const handleSearch = async () => {
-  currentPage.value = 1
-  await fetchOrders()
-}
-
-onMounted(() => {
-  fetchOrders()
-})
-
-// Computed properties
-const filteredOrders = computed(() => {
-  let filtered = [...orders.value]
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(order => 
-      order.nombreApellido.toLowerCase().includes(query) ||
-      order.dni.includes(query) ||
-      order.producto.toLowerCase().includes(query)
-    )
-  }
-  filtered.sort((a, b) => {
-    const aValue = a[sortColumn.value]
-    const bValue = b[sortColumn.value]
-    if (sortDirection.value === 'asc') {
-      return aValue > bValue ? 1 : -1
-    } else {
-      return aValue < bValue ? 1 : -1
+    // Ir a crear nueva orden
+    const goToNuevaOrden = () => {
+      router.push('/ordenes/nueva')
     }
+import { onMounted as vueOnMounted } from 'vue'
+
+// Cerrar popover al hacer clic fuera
+vueOnMounted(() => {
+  document.addEventListener('click', () => {
+    paginatedOrders.value.forEach(order => {
+      if (order.showDetail) order.showDetail = false
+    })
   })
-  return filtered
 })
 
-const totalPages = computed(() => 
-  Math.ceil(filteredOrders.value.length / itemsPerPage)
-)
+    import { ref, computed, onMounted } from 'vue'
+    import { useRouter } from 'vue-router'
+    import { ordenesService } from '@/services/api'
 
-const paginatedOrders = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredOrders.value.slice(start, end)
-})
+    // Corrección: definir modalVisible y selectedOrder
+    const modalVisible = ref(false)
+    const selectedOrder = ref({})
+
+    // Mostrar detalle de orden en modal
+    const showOrderDetail = (order) => {
+      selectedOrder.value = order
+      modalVisible.value = true
+    }
+
+    const router = useRouter()
+
+    // Estado
+    const orders = ref([])
+    const loading = ref(true)
+    const error = ref(null)
+    const searchQuery = ref('')
+    const currentPage = ref(1)
+    const itemsPerPage = 10
+    const sortColumn = ref('numeroOrden')
+    const sortDirection = ref('asc')
+
+    // Función para manejar el cambio de estado en frontend
+    const handleEstadoChange = (order) => {
+      // Aquí podrías agregar lógica para guardar el estado en backend si lo deseas
+      // Por ahora solo actualiza el mock/local
+      // Ejemplo: mostrar mensaje
+      order.estado = order.estado
+    }
+
+    // Métodos
+    const fetchOrders = async () => {
+    loading.value = true
+    error.value = null
+    try {
+      const resp = await ordenesService.getAll()
+      // El backend debe devolver { success, data: [...] }
+      orders.value = Array.isArray(resp.data) ? resp.data : (resp.data?.data || [])
+    } catch (e) {
+      error.value = 'No se pudieron cargar las órdenes. Por favor, intente nuevamente.'
+    } finally {
+      loading.value = false
+    }
+    }
+
+    const goToOrderDetail = (orderId) => {
+    router.push(`/ordenes/${orderId}`)
+    }
+
+    const sort = (column) => {
+    if (sortColumn.value === column) {
+        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+    } else {
+        sortColumn.value = column
+        sortDirection.value = 'asc'
+    }
+    }
+
+    const getSortIcon = (column) => {
+    if (sortColumn.value !== column) return '↕️'
+    return sortDirection.value === 'asc' ? '↑' : '↓'
+    }
+
+    const handleSearch = () => {
+      // Reiniciar a la primera página cuando se realiza una búsqueda
+      currentPage.value = 1
+      // Aquí podríamos añadir lógica adicional cuando tengamos el backend
+      // Por ejemplo, hacer una llamada a la API con los parámetros de búsqueda
+    }
+
+    // Computed properties
+    const filteredOrders = computed(() => {
+    let filtered = [...orders.value]
+    
+    if (searchQuery.value) {
+      const query = searchQuery.value.toLowerCase()
+      filtered = filtered.filter(order => {
+        // Buscar en cliente
+        const cliente = (order.cliente?.nombre_apellido || order.cliente?.nombre || order.cliente || '').toString().toLowerCase()
+        // Buscar en dni
+        const dni = (order.cliente?.dni || order.dni || '').toString().toLowerCase()
+        // Buscar en producto
+        const producto = (order.producto?.tipo_producto || order.producto?.marca || order.producto?.modelo || order.producto || '').toString().toLowerCase()
+        // Buscar en estado
+        const estado = (order.estado || '').toString().toLowerCase()
+        // Buscar en fecha
+        const fecha = (order.fecha_ingreso || order.fecha_creacion || '').toString().toLowerCase()
+        return cliente.includes(query) || dni.includes(query) || producto.includes(query) || estado.includes(query) || fecha.includes(query)
+      })
+    }
+    
+    // Ordenamiento
+    filtered.sort((a, b) => {
+        const aValue = a[sortColumn.value]
+        const bValue = b[sortColumn.value]
+        
+        if (sortDirection.value === 'asc') {
+        return aValue > bValue ? 1 : -1
+        } else {
+        return aValue < bValue ? 1 : -1
+        }
+    })
+    
+    return filtered
+    })
+
+    const totalPages = computed(() => 
+    Math.ceil(filteredOrders.value.length / itemsPerPage)
+    )
+
+    const paginatedOrders = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage
+    const end = start + itemsPerPage
+    return filteredOrders.value.slice(start, end)
+    })
+
+    // Lifecycle
+    onMounted(() => {
+    fetchOrders()
+    })
+// ...existing code...
 </script>
 
 <style scoped>
+  .btn-nueva-orden {
+    margin-left: 12px;
+    font-size: 1em;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-weight: 500;
+    background: #2980b9;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s;
+  }
+  .btn-nueva-orden:hover {
+    background: #21618c;
+  }
+  .order-detail-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 340px;
+    height: 100%;
+    background: none;
+    z-index: 100;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+  .order-detail-panel-content {
+    background: #fff;
+    padding: 10px 12px;
+    border-radius: 12px 0 0 12px;
+    box-shadow: -4px 0 24px rgba(44,62,80,0.13);
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    color: #2c3e50;
+    width: 300px;
+    max-height: 96vh;
+    margin: 0;
+    position: relative;
+    pointer-events: auto;
+    overflow-y: auto;
+    animation: slidein 0.18s;
+  }
+  .order-detail-list > li {
+    margin-bottom: 8px;
+    font-size: 0.97em;
+    background: #f8f9fa;
+    border-radius: 7px;
+    box-shadow: 0 1px 4px rgba(44,62,80,0.07);
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+  }
+  .order-detail-list strong {
+    color: #2980b9;
+    font-weight: 600;
+    margin-bottom: 1px;
+    font-size: 0.97em;
+  }
+  .order-detail-list ul li {
+    font-size: 0.95em;
+    margin-bottom: 1px;
+    color: #555;
+  }
+  @keyframes slidein {
+    0% { opacity: 0; transform: translateX(40px); }
+    100% { opacity: 1; transform: translateX(0); }
+  }
+  .order-detail-popover-content h3 {
+    font-size: 1.08em;
+    color: #2980b9;
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .order-detail-list > li {
+    margin-bottom: 12px;
+    font-size: 1em;
+    background: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(44,62,80,0.07);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+  }
+  .order-detail-list strong {
+    color: #2980b9;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .order-detail-list ul {
+    margin: 6px 0 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .order-detail-list ul li {
+    font-size: 0.97em;
+    margin-bottom: 2px;
+    color: #555;
+  }
+  @keyframes popin {
+    0% { opacity: 0; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .order-detail-row {
+    background: #f4f8fb;
+  }
+  .order-detail-accordion {
+    background: #f8f9fa;
+    padding: 24px 28px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(44,62,80,0.10);
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    color: #2c3e50;
+    margin: 0 0 8px 0;
+  }
+  .order-detail-accordion h3 {
+    font-size: 1.18em;
+    color: #2980b9;
+    margin-bottom: 12px;
+  }
+  .modal-content {
+    background: #f8f9fa;
+    padding: 36px 40px;
+    border-radius: 16px;
+    max-width: 520px;
+    margin: 40px auto;
+    box-shadow: 0 8px 32px rgba(44,62,80,0.18);
+    font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+    color: #2c3e50;
+  }
+  .order-detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .order-detail-list > li {
+    margin-bottom: 18px;
+    font-size: 1.08em;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.07);
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+  }
+  .order-detail-list strong {
+    color: #2980b9;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .order-detail-list ul {
+    margin: 8px 0 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .order-detail-list ul li {
+    font-size: 0.98em;
+    margin-bottom: 4px;
+    color: #555;
+  }
     .orders-list-container {
     max-width: 1200px;
     margin: 0 auto;

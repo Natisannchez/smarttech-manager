@@ -46,15 +46,7 @@
         </div>
       </div>
 
-      <div class="section-card">
-        <div class="section-icon">⚙️</div>
-        <h3>Configuración</h3>
-        <p>Configuraciones generales del sistema</p>
-        <div class="section-actions">
-          <button class="btn-primary">Configurar</button>
-          <button class="btn-secondary">Preferencias</button>
-        </div>
-      </div>
+      
     </div>
 
     <div class="quick-stats">
@@ -117,7 +109,8 @@ onMounted(async () => {
   // Técnicos
   const tecnicosResp = await tecnicosService.getAll()
   const tecnicos = tecnicosResp.data.data || []
-  stats.value.tecnicosDisponibles = tecnicos.filter(t => t.estado === 'activo' || t.estado === 'disponible').length
+  // Unificar lógica: técnicos disponibles = activos
+  stats.value.tecnicosDisponibles = tecnicos.filter(t => t.activo).length
   stats.value.totalTecnicos = tecnicos.length
 })
 </script>
